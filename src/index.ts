@@ -1,5 +1,6 @@
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
+import { runMigrations } from './migrations.js';
 import { closeDatabase } from './db.js';
 import {
   handleAutocomplete,
@@ -86,5 +87,13 @@ async function shutdown(signal: string): Promise<void> {
 
 process.once('SIGINT', () => void shutdown('SIGINT'));
 process.once('SIGTERM', () => void shutdown('SIGTERM'));
+
+try {
+  await runMigrations();
+} catch (error) {
+  console.error('[startup] database migration failed', error);
+  await closeDatabase();
+  process.exit(1);
+}
 
 await client.login(config.discordToken);
